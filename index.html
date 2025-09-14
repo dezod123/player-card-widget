@@ -143,42 +143,53 @@
 
     // Listen for messages from Wix
     window.addEventListener('message', function(event) {
-      if (!event.data || event.data.type !== "PLAYER_DATA") return;
+        if (!event.data || event.data.type !== "PLAYER_DATA") return;
 
-      const player = event.data.payload;
-      console.log("Received Player Data:", player);
+        const player = event.data.payload;
+        console.log("Received Player Data:", player);
 
-      renderPlayerCard(player);
+        renderPlayerCard(player);
     });
 
+    function getWixImageUrl(wixPhoto) {
+        if (!wixPhoto || typeof wixPhoto !== 'string') return null;
+
+        // Step 1: Remove the wix:image://v1/ prefix
+        let clean = wixPhoto.replace("wix:image://v1/", "");
+
+        // Step 2: Split on "/" and get the first part (the actual file reference)
+        clean = clean.split("/")[0];
+
+        // Step 3: Return the full static URL
+        return `https://static.wixstatic.com/media/${clean}`;
+    }
+
     function renderPlayerCard(player) {
-      const photoUrl = player.photo && player.photo.trim() !== "" 
-        ? player.photo.split("#")[0].replace("wix:image://v1/", "")
-        : FALLBACK_IMAGE;
+        const photoUrl = getWixImageUrl(player.photo) || FALLBACK_IMAGE;
 
-      app.innerHTML = `
+        app.innerHTML = `
         <div class="player-card">
-          <div class="jersey-number">${player.numero ?? ''}</div>
-          <div class="team-name">${player.equipe?.title ?? ''}</div>
+            <div class="jersey-number">${player.numero ?? ''}</div>
+            <div class="team-name">${player.equipe?.title ?? ''}</div>
 
-          <div class="player-photo">
+            <div class="player-photo">
             <img src="${photoUrl}" alt="Player Photo" onerror="this.src='${FALLBACK_IMAGE}'" />
-          </div>
+            </div>
 
-          <div class="player-name">${player.nom ?? 'Joueur'}</div>
+            <div class="player-name">${player.nom ?? 'Joueur'}</div>
 
-          <div class="stats">
+            <div class="stats">
             <div class="stat">
-              <div class="stat-label">Buts</div>
-              <div class="stat-value">${player.but ?? 0}</div>
+                <div class="stat-label">Buts</div>
+                <div class="stat-value">${player.but ?? 0}</div>
             </div>
             <div class="stat">
-              <div class="stat-label">Passes</div>
-              <div class="stat-value">${player.passes ?? 0}</div>
+                <div class="stat-label">Passes</div>
+                <div class="stat-value">${player.passes ?? 0}</div>
             </div>
-          </div>
+            </div>
         </div>
-      `;
+        `;
     }
   </script>
 </body>
