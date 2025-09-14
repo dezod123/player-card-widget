@@ -250,29 +250,28 @@
       const containerWidth = container.offsetWidth;
       const containerHeight = container.offsetHeight;
       
-      const imgNaturalWidth = img.naturalWidth;
-      const imgNaturalHeight = img.naturalHeight;
-      
-      // Calculate scale to fit the cropped area into container
+      // Calculate scale to fill the container with the cropped area
       const scaleX = containerWidth / cropArea.width;
       const scaleY = containerHeight / cropArea.height;
-      const scale = Math.max(scaleX, scaleY) * 1.2; // Extra zoom
+      const scale = Math.max(scaleX, scaleY); // Fill the container
       
-      // Calculate translation to center the crop area
-      const displayWidth = imgNaturalWidth;
-      const displayHeight = imgNaturalHeight;
+      // Calculate translation to center the crop area in the container
+      const centerX = cropArea.x + (cropArea.width / 2);
+      const centerY = cropArea.y + (cropArea.height / 2);
       
-      const scaledDisplayWidth = displayWidth * scale;
-      const scaledDisplayHeight = displayHeight * scale;
+      // Container center
+      const containerCenterX = containerWidth / 2;
+      const containerCenterY = containerHeight / 2;
       
-      const translateX = -cropArea.x * scale + (containerWidth - scaledDisplayWidth) / 2;
-      const translateY = -cropArea.y * scale + (containerHeight - scaledDisplayHeight) / 2;
+      // Calculate translation needed
+      const translateX = containerCenterX - (centerX * scale);
+      const translateY = containerCenterY - (centerY * scale);
       
       // Apply transform
       img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
       img.style.transformOrigin = '0 0';
       
-      updateDebug(`Applied zoom: ${scale.toFixed(2)}x`);
+      updateDebug(`Applied zoom: ${scale.toFixed(2)}x at (${Math.round(centerX)}, ${Math.round(centerY)})`);
     }
 
     /**
