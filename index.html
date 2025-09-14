@@ -152,6 +152,8 @@
     });
 
     function renderPlayerCard(player) {
+        console.log('Sanity Test');
+        console.log(player.photo);
         const photoUrl = player.photo && player.photo.trim() !== "" 
             ? player.photo 
             : FALLBACK_IMAGE;
