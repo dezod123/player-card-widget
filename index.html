@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Player Card Widget</title>
+  <style>
+    /* Reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    /* Container */
+    #app {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      padding: 20px;
+    }
+
+    /* Player Card */
+    .player-card {
+      position: relative;
+      width: 250px;
+      height: 380px;
+      background: linear-gradient(145deg, #1a434f, #2563eb);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 10px;
+      color: #fff;
+    }
+
+    /* Jersey number top left */
+    .jersey-number {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      font-size: 28px;
+      font-weight: bold;
+      color: #fff;
+      background: rgba(0,0,0,0.3);
+      padding: 4px 10px;
+      border-radius: 8px;
+    }
+
+    /* Team name top right */
+    .team-name {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      font-size: 16px;
+      background: rgba(255,255,255,0.2);
+      padding: 3px 8px;
+      border-radius: 8px;
+    }
+
+    /* Player photo */
+    .player-photo {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 30px;
+      border: 4px solid rgba(255,255,255,0.3);
+    }
+
+    .player-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Player Name */
+    .player-name {
+      margin-top: 20px;
+      font-size: 22px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    /* Stats */
+    .stats {
+      display: flex;
+      justify-content: space-around;
+      width: 100%;
+      margin-top: auto;
+      padding: 15px 10px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 10px;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #d1d5db;
+    }
+
+    .stat-value {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    /* Fallback silhouette */
+    .placeholder {
+      width: 80px;
+      height: 80px;
+      opacity: 0.4;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <p>En attente des données du joueur...</p>
+  </div>
+
+  <script>
+    const app = document.getElementById('app');
+
+    // Fallback silhouette image URL
+    const FALLBACK_IMAGE = "https://cdn-icons-png.flaticon.com/512/64/64572.png";
+
+    // Listen for messages from Wix
+    window.addEventListener('message', function(event) {
+      if (!event.data || event.data.type !== "PLAYER_DATA") return;
+
+      const player = event.data.payload;
+      console.log("Received Player Data:", player);
+
+      renderPlayerCard(player);
+    });
+
+    function renderPlayerCard(player) {
+      const photoUrl = player.photo && player.photo.trim() !== "" 
+        ? player.photo.split("#")[0].replace("wix:image://v1/", "")
+        : FALLBACK_IMAGE;
+
+      app.innerHTML = `
+        <div class="player-card">
+          <div class="jersey-number">${player.numero ?? ''}</div>
+          <div class="team-name">${player.equipe?.title ?? ''}</div>
+
+          <div class="player-photo">
+            <img src="${photoUrl}" alt="Player Photo" onerror="this.src='${FALLBACK_IMAGE}'" />
+          </div>
+
+          <div class="player-name">${player.nom ?? 'Joueur'}</div>
+
+          <div class="stats">
+            <div class="stat">
+              <div class="stat-label">Buts</div>
+              <div class="stat-value">${player.but ?? 0}</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Passes</div>
+              <div class="stat-value">${player.passes ?? 0}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>
