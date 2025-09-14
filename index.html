@@ -1,111 +1,97 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Player Card Widget</title>
+
+  <!-- TensorFlow.js Core -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
+
+  <!-- BodyPix for body segmentation -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.2.0/dist/body-pix.min.js"></script>
+
+  <!-- Face-api.js for face detection -->
+  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
+
   <style>
-    /* Reset */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    html, body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background: transparent;
-      font-family: 'Poppins', sans-serif;
-    }
-
-    /* Container */
-    #app {
+    body {
+      background: linear-gradient(to bottom, #0a1a2f, #1a434f);
+      font-family: Arial, sans-serif;
+      color: white;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100%;
-      padding: 20px;
+      min-height: 100vh;
+      margin: 0;
     }
 
     /* Player Card */
     .player-card {
-      position: relative;
-      width: 250px;
-      height: 380px;
-      background: linear-gradient(145deg, #1a434f, #2563eb);
+      width: 300px;
+      height: 420px;
       border-radius: 20px;
-      overflow: hidden;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+      background: linear-gradient(to bottom, #1e3a8a, #2563eb);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.4);
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 20px 10px;
-      color: #fff;
-    }
-
-    /* Jersey number top left */
-    .jersey-number {
-      position: absolute;
-      top: 15px;
-      left: 15px;
-      font-size: 28px;
-      font-weight: bold;
-      color: #fff;
-      background: rgba(0,0,0,0.3);
-      padding: 4px 10px;
-      border-radius: 8px;
-    }
-
-    /* Team name top right */
-    .team-name {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      font-size: 16px;
-      background: rgba(255,255,255,0.2);
-      padding: 3px 8px;
-      border-radius: 8px;
-    }
-
-    /* Player photo */
-    .player-photo {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.1);
+      padding: 16px;
+      position: relative;
       overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-top: 30px;
-      border: 4px solid rgba(255,255,255,0.3);
     }
 
-    .player-photo img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+    .player-header {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      display: flex;
+      gap: 8px;
+      width: calc(100% - 24px);
+      justify-content: space-between;
+    }
+
+    .jersey-number {
+      background: rgba(0,0,0,0.6);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .team-name {
+      background: rgba(255,255,255,0.3);
+      padding: 4px 10px;
+      border-radius: 10px;
+      font-size: 14px;
+    }
+
+    /* Canvas */
+    #player-canvas {
+      width: 240px;
+      height: 280px;
+      border-radius: 12px;
+      background: transparent;
+      margin-top: 40px;
     }
 
     /* Player Name */
     .player-name {
-      margin-top: 20px;
-      font-size: 22px;
+      margin-top: 8px;
+      font-size: 20px;
       font-weight: bold;
       text-align: center;
     }
 
-    /* Stats */
+    /* Stats Section */
     .stats {
       display: flex;
       justify-content: space-around;
       width: 100%;
       margin-top: auto;
-      padding: 15px 10px;
-      background: rgba(0,0,0,0.3);
-      border-radius: 10px;
+      background: rgba(0,0,0,0.2);
+      padding: 8px 0;
+      border-radius: 12px;
     }
 
     .stat {
@@ -118,68 +104,168 @@
     }
 
     .stat-value {
-      font-size: 18px;
+      font-size: 16px;
       font-weight: bold;
     }
 
-    /* Fallback silhouette */
-    .placeholder {
-      width: 80px;
-      height: 80px;
-      opacity: 0.4;
+    /* Loader */
+    .loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <div id="app">
-    <p>En attente des données du joueur...</p>
+
+  <div class="player-card">
+    <div class="player-header">
+      <div class="jersey-number" id="jersey-number">#</div>
+      <div class="team-name" id="team-name">Team</div>
+    </div>
+
+    <canvas id="player-canvas"></canvas>
+    <div class="loading" id="loading">Processing...</div>
+
+    <div class="player-name" id="player-name">Player</div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Buts</div>
+        <div class="stat-value" id="player-goals">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Passes</div>
+        <div class="stat-value" id="player-passes">0</div>
+      </div>
+    </div>
   </div>
 
   <script>
-    const app = document.getElementById('app');
+    let faceApiLoaded = false;
+    let bodyPixLoaded = false;
+    let bodyPixNet = null;
 
-    // Fallback silhouette image URL
-    const FALLBACK_IMAGE = "https://cdn-icons-png.flaticon.com/512/64/64572.png";
-
-    // Listen for messages from Wix
-    window.addEventListener('message', function(event) {
-        if (!event.data || event.data.type !== "PLAYER_DATA") return;
-
-        const player = event.data.payload;
-        console.log("Received Player Data:", player);
-
-        renderPlayerCard(player);
-    });
-
-    function renderPlayerCard(player) {
-        console.log('Sanity Test');
-        console.log(player.photo);
-        const photoUrl = player.photo;
-
-        app.innerHTML = `
-        <div class="player-card">
-            <div class="jersey-number">${player.numero ?? ''}</div>
-            <div class="team-name">${player.equipe?.title ?? ''}</div>
-
-            <div class="player-photo">
-            <img src="${photoUrl}" alt="Player Photo" onerror="this.src='${FALLBACK_IMAGE}'" />
-            </div>
-
-            <div class="player-name">${player.nom ?? 'Joueur'}</div>
-
-            <div class="stats">
-            <div class="stat">
-                <div class="stat-label">Buts</div>
-                <div class="stat-value">${player.but ?? 0}</div>
-            </div>
-            <div class="stat">
-                <div class="stat-label">Passes</div>
-                <div class="stat-value">${player.passes ?? 0}</div>
-            </div>
-            </div>
-        </div>
-        `;
+    /**
+     * Load both AI models
+     */
+    async function loadModels() {
+      if (!faceApiLoaded) {
+        await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js/weights');
+        faceApiLoaded = true;
+      }
+      if (!bodyPixLoaded) {
+        bodyPixNet = await bodyPix.load();
+        bodyPixLoaded = true;
+      }
     }
+
+    /**
+     * Main processing function
+     */
+    async function processPlayerImage(imageUrl, playerData) {
+      const canvas = document.getElementById('player-canvas');
+      const ctx = canvas.getContext('2d');
+      const loading = document.getElementById('loading');
+
+      // Display player info
+      document.getElementById('jersey-number').innerText = playerData.numero || '';
+      document.getElementById('team-name').innerText = playerData.team || '';
+      document.getElementById('player-name').innerText = playerData.name || 'Joueur';
+      document.getElementById('player-goals').innerText = playerData.goals || 0;
+      document.getElementById('player-passes').innerText = playerData.passes || 0;
+
+      loading.style.display = 'block';
+
+      // Load AI models if not already loaded
+      await loadModels();
+
+      // Load player image
+      const img = new Image();
+      img.crossOrigin = 'anonymous'; // Required for external URLs
+      img.src = imageUrl;
+
+      img.onload = async () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+
+        // Step 1. Detect face
+        const detection = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions());
+
+        // Step 2. Background removal using BodyPix
+        const segmentation = await bodyPixNet.segmentPerson(img);
+        const maskBackground = bodyPix.toMask(
+          segmentation,
+          { r: 0, g: 0, b: 0, a: 0 },    // Background transparent
+          { r: 255, g: 255, b: 255, a: 255 } // Player opaque
+        );
+
+        // Draw segmented person
+        bodyPix.drawMask(canvas, img, maskBackground, 1, 0, false);
+
+        // Step 3. Zoom in on face if detected
+        if (detection) {
+          const { x, y, width, height } = detection.box;
+          const zoomFactor = 2.0; // Adjust zoom here (2.0 = zoom in 2x)
+
+          const centerX = x + width / 2;
+          const centerY = y + height / 2;
+
+          const zoomWidth = canvas.width / zoomFactor;
+          const zoomHeight = canvas.height / zoomFactor;
+
+          const cropX = Math.max(0, centerX - zoomWidth / 2);
+          const cropY = Math.max(0, centerY - zoomHeight / 2);
+
+          // Create a temporary canvas for zoom
+          const zoomCanvas = document.createElement('canvas');
+          zoomCanvas.width = canvas.width;
+          zoomCanvas.height = canvas.height;
+          const zoomCtx = zoomCanvas.getContext('2d');
+
+          zoomCtx.drawImage(canvas, cropX, cropY, zoomWidth, zoomHeight, 0, 0, canvas.width, canvas.height);
+
+          // Replace main canvas with zoomed version
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(zoomCanvas, 0, 0);
+        } else {
+          console.warn("No face detected for this image.");
+        }
+
+        loading.style.display = 'none';
+      };
+    }
+
+    /**
+     * Listen for messages from Wix dynamic page
+     */
+    window.addEventListener("message", (event) => {
+      if (!event.data || event.data.type !== "PLAYER_DATA") return;
+
+      console.log("Received player data from Wix:", event.data.payload);
+
+      const player = event.data.payload;
+
+      // Player object structure
+      const playerData = {
+        name: player.nom || 'Joueur',
+        team: player.equipe?.title || '',
+        numero: player.numero || '',
+        goals: player.but || 0,
+        passes: player.passes || 0
+      };
+
+      const photoUrl = player.photo && player.photo.trim() !== '' 
+        ? player.photo 
+        : "https://cdn-icons-png.flaticon.com/512/64/64572.png";
+
+      // Process the live data
+      processPlayerImage(photoUrl, playerData);
+    });
   </script>
 </body>
 </html>
