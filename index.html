@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Player Card Widget with Native Face Detection</title>
+  <title>Player Card Widget</title>
 
   <style>
     body {
@@ -72,9 +72,20 @@
     .player-image {
       width: 100%;
       height: 100%;
-      object-fit: cover;
       border-radius: 12px;
-      transition: transform 0.3s ease;
+    }
+
+    /* Smart cropping styles */
+    .player-image.smart-crop {
+      object-fit: cover;
+      object-position: 50% 25%; /* Center horizontally, 25% from top (face area) */
+      transform: scale(1.5); /* Zoom in for better face visibility */
+    }
+
+    /* Regular display without processing */
+    .player-image.normal {
+      object-fit: cover;
+      object-position: center;
     }
 
     .placeholder-icon {
@@ -137,24 +148,35 @@
       z-index: 10;
     }
 
-    /* Hidden canvas for image processing */
-    #processing-canvas {
-      display: none;
+    .mode-toggle {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 10px;
+      cursor: pointer;
+      z-index: 20;
     }
   </style>
 </head>
 <body>
 
   <div class="player-card">
+    <button class="mode-toggle" onclick="toggleCropMode()">Smart Crop: ON</button>
+    
     <div class="player-header">
       <div class="jersey-number" id="jersey-number">#</div>
       <div class="team-name" id="team-name">Team</div>
     </div>
 
     <div class="player-image-container">
-      <img id="player-image" class="player-image" style="display: none;" />
+      <img id="player-image" class="player-image smart-crop" style="display: none;" />
       <div class="placeholder-icon" id="placeholder">👤</div>
-      <div class="loading" id="loading" style="display: none;">Detecting face...</div>
+      <div class="loading" id="loading" style="display: none;">Loading...</div>
     </div>
 
     <div class="player-name" id="player-name">Player</div>
@@ -173,114 +195,42 @@
     <div class="debug-info" id="debug-info">Waiting for data...</div>
   </div>
 
-  <!-- Hidden canvas for image processing -->
-  <canvas id="processing-canvas"></canvas>
-
   <script>
+    let currentImageUrl = null;
+    let smartCropEnabled = true;
+
     function updateDebug(message) {
       document.getElementById('debug-info').innerText = message;
       console.log('DEBUG:', message);
     }
 
-    /**
-     * Browser Native Face Detection using FaceDetector API
-     */
-    async function detectFaceNative(imageElement) {
-      try {
-        // Check if FaceDetector is supported
-        if ('FaceDetector' in window) {
-          updateDebug('Using native FaceDetector API');
-          const faceDetector = new FaceDetector({
-            maxDetectedFaces: 1,
-            fastMode: true
-          });
-          
-          const faces = await faceDetector.detect(imageElement);
-          
-          if (faces.length > 0) {
-            const face = faces[0];
-            const bbox = face.boundingBox;
-            updateDebug(`Face detected at: ${Math.round(bbox.x)}, ${Math.round(bbox.y)}`);
-            return {
-              x: bbox.x,
-              y: bbox.y,
-              width: bbox.width,
-              height: bbox.height
-            };
-          }
-        } else {
-          updateDebug('FaceDetector not supported, using smart cropping');
-          return null;
-        }
-      } catch (error) {
-        updateDebug('Native face detection failed: ' + error.message);
-        return null;
+    function toggleCropMode() {
+      smartCropEnabled = !smartCropEnabled;
+      const button = document.querySelector('.mode-toggle');
+      const img = document.getElementById('player-image');
+      
+      button.textContent = `Smart Crop: ${smartCropEnabled ? 'ON' : 'OFF'}`;
+      
+      if (img.style.display !== 'none') {
+        img.className = smartCropEnabled ? 'player-image smart-crop' : 'player-image normal';
+        updateDebug(`Switched to ${smartCropEnabled ? 'smart crop' : 'normal'} mode`);
       }
       
-      return null;
+      // Reload current image if available
+      if (currentImageUrl) {
+        loadPlayerImage(currentImageUrl);
+      }
     }
 
     /**
-     * Smart cropping - assumes face is in upper portion of image
+     * Simple image loading with CSS-based smart cropping
      */
-    function getSmartCrop(img) {
-      const imgWidth = img.naturalWidth;
-      const imgHeight = img.naturalHeight;
-      
-      // Assume face is in upper 60% of image, centered horizontally
-      const cropWidth = Math.min(imgWidth, imgHeight * 0.8);
-      const cropHeight = Math.min(imgHeight * 0.7, cropWidth * 1.2);
-      
-      const cropX = (imgWidth - cropWidth) / 2;
-      const cropY = imgHeight * 0.1; // Start from 10% down
-      
-      return {
-        x: cropX,
-        y: cropY,
-        width: cropWidth,
-        height: cropHeight
-      };
-    }
-
-    /**
-     * Apply crop/zoom to image using CSS transform
-     */
-    function applyCropToImage(img, cropArea) {
-      const container = img.parentElement;
-      const containerWidth = container.offsetWidth;
-      const containerHeight = container.offsetHeight;
-      
-      // Calculate scale to fill the container with the cropped area
-      const scaleX = containerWidth / cropArea.width;
-      const scaleY = containerHeight / cropArea.height;
-      const scale = Math.max(scaleX, scaleY); // Fill the container
-      
-      // Calculate translation to center the crop area in the container
-      const centerX = cropArea.x + (cropArea.width / 2);
-      const centerY = cropArea.y + (cropArea.height / 2);
-      
-      // Container center
-      const containerCenterX = containerWidth / 2;
-      const containerCenterY = containerHeight / 2;
-      
-      // Calculate translation needed
-      const translateX = containerCenterX - (centerX * scale);
-      const translateY = containerCenterY - (centerY * scale);
-      
-      // Apply transform
-      img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
-      img.style.transformOrigin = '0 0';
-      
-      updateDebug(`Applied zoom: ${scale.toFixed(2)}x at (${Math.round(centerX)}, ${Math.round(centerY)})`);
-    }
-
-    /**
-     * Process player image with face detection/smart cropping
-     */
-    async function processPlayerImage(imageUrl) {
+    function loadPlayerImage(imageUrl) {
       const img = document.getElementById('player-image');
       const placeholder = document.getElementById('placeholder');
       const loading = document.getElementById('loading');
+
+      currentImageUrl = imageUrl;
 
       if (!imageUrl || imageUrl.trim() === '') {
         updateDebug('No image URL provided');
@@ -291,53 +241,36 @@
       loading.style.display = 'block';
       placeholder.style.display = 'none';
 
-      // Create temporary image for processing
-      const tempImg = new Image();
-      
-      tempImg.onload = async function() {
-        updateDebug('Image loaded, processing...');
-        
-        // Set the display image
-        img.src = imageUrl;
+      // Set the appropriate CSS class
+      img.className = smartCropEnabled ? 'player-image smart-crop' : 'player-image normal';
+
+      img.onload = function() {
+        updateDebug(`Image loaded successfully (${smartCropEnabled ? 'smart crop' : 'normal'} mode)`);
         img.style.display = 'block';
-        img.style.transform = 'none'; // Reset any previous transforms
-        
-        // Wait for display image to load
-        img.onload = async function() {
-          try {
-            // Try native face detection first
-            let faceArea = await detectFaceNative(img);
-            
-            // Fallback to smart cropping if no face detected
-            if (!faceArea) {
-              updateDebug('No face detected, using smart crop');
-              faceArea = getSmartCrop(img);
-            }
-            
-            // Apply the crop/zoom
-            applyCropToImage(img, faceArea);
-            
-            loading.style.display = 'none';
-            updateDebug('Face processing complete');
-            
-          } catch (error) {
-            updateDebug('Processing error: ' + error.message);
-            loading.style.display = 'none';
-            // Image will display normally without processing
-          }
-        };
+        loading.style.display = 'none';
+        placeholder.style.display = 'none';
       };
 
-      tempImg.onerror = function(error) {
+      img.onerror = function(error) {
         updateDebug('Image failed to load: ' + imageUrl);
         console.error('Image load error:', error);
         img.style.display = 'none';
         loading.style.display = 'none';
         placeholder.style.display = 'block';
         placeholder.innerHTML = '❌';
+        
+        // Try fallback image
+        if (!imageUrl.includes('flaticon')) {
+          updateDebug('Trying fallback image...');
+          setTimeout(() => {
+            const fallbackUrl = "https://cdn-icons-png.flaticon.com/512/64/64572.png";
+            img.src = fallbackUrl;
+            currentImageUrl = fallbackUrl;
+          }, 1000);
+        }
       };
 
-      tempImg.src = imageUrl;
+      img.src = imageUrl;
     }
 
     /**
@@ -353,9 +286,9 @@
       document.getElementById('player-goals').innerText = playerData.goals || 0;
       document.getElementById('player-passes').innerText = playerData.passes || 0;
 
-      // Process image with face detection
+      // Load image
       if (imageUrl) {
-        processPlayerImage(imageUrl);
+        loadPlayerImage(imageUrl);
       }
     }
 
@@ -399,7 +332,7 @@
     // Test with sample data if no message received after 3 seconds
     setTimeout(() => {
       if (document.getElementById('debug-info').innerText === 'Waiting for data...') {
-        updateDebug('No data received, testing with sample');
+        updateDebug('No data received, testing with local data');
         const testData = {
           name: 'Test Player',
           team: 'Test Team',
@@ -408,21 +341,31 @@
           passes: 12
         };
         
-        // Test with a sample portrait URL
-        const testImageUrl = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=600&fit=crop&crop=face';
+        // Use a simple data URL that will definitely work
+        const testImageUrl = "data:image/svg+xml;base64," + btoa(`
+          <svg width="240" height="280" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#4299e1;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#2563eb;stop-opacity:1" />
+              </linearGradient>
+            </defs>
+            <rect width="240" height="280" fill="url(#bg)" rx="12"/>
+            <circle cx="120" cy="80" r="35" fill="white" opacity="0.9"/>
+            <circle cx="110" cy="75" r="3" fill="#2563eb"/>
+            <circle cx="130" cy="75" r="3" fill="#2563eb"/>
+            <path d="M 110 85 Q 120 95 130 85" stroke="#2563eb" stroke-width="2" fill="none"/>
+            <rect x="105" y="120" width="30" height="50" fill="white" opacity="0.9" rx="15"/>
+            <rect x="95" y="140" width="15" height="40" fill="white" opacity="0.9" rx="7"/>
+            <rect x="130" y="140" width="15" height="40" fill="white" opacity="0.9" rx="7"/>
+            <text x="120" y="220" text-anchor="middle" fill="white" font-size="16" font-weight="bold">TEST</text>
+            <text x="120" y="240" text-anchor="middle" fill="white" font-size="12">PLAYER</text>
+          </svg>
+        `);
         
         processPlayerData(testData, testImageUrl);
       }
     }, 3000);
-
-    // Check for FaceDetector support on load
-    window.addEventListener('load', () => {
-      if ('FaceDetector' in window) {
-        updateDebug('Native FaceDetector supported!');
-      } else {
-        updateDebug('FaceDetector not supported, will use smart cropping');
-      }
-    });
   </script>
 </body>
 </html>
