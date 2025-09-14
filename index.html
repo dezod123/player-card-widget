@@ -151,21 +151,10 @@
         renderPlayerCard(player);
     });
 
-    function getWixImageUrl(wixPhoto) {
-        if (!wixPhoto || typeof wixPhoto !== 'string') return null;
-
-        // Step 1: Remove the wix:image://v1/ prefix
-        let clean = wixPhoto.replace("wix:image://v1/", "");
-
-        // Step 2: Split on "/" and get the first part (the actual file reference)
-        clean = clean.split("/")[0];
-
-        // Step 3: Return the full static URL
-        return `https://static.wixstatic.com/media/${clean}`;
-    }
-
     function renderPlayerCard(player) {
-        const photoUrl = getWixImageUrl(player.photo) || FALLBACK_IMAGE;
+        const photoUrl = player.photo && player.photo.trim() !== "" 
+            ? player.photo 
+            : FALLBACK_IMAGE;
 
         app.innerHTML = `
         <div class="player-card">
