@@ -135,14 +135,26 @@
         transform: scale(1.6); /* Slightly less zoom for mobile */
       }
     }
+
+    /* Debug info for testing */
+    .debug-info {
+      position: absolute;
+      bottom: 5px;
+      left: 5px;
+      font-size: 10px;
+      color: #ff6b6b;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
   <div class="player-card">
     <!-- Top Header -->
     <div class="player-header">
-      <div class="jersey-number" id="jersey-number">4</div>
-      <div class="team-name" id="team-name">Kelb United</div>
+      <div class="jersey-number" id="jersey-number">#</div>
+      <div class="team-name" id="team-name">Team</div>
     </div>
 
     <!-- Player Image -->
@@ -150,13 +162,13 @@
       <img 
         id="player-image"
         class="player-image" 
-        src="https://static.wixstatic.com/media/9e7f4d_289498e9283448c8bd89aa2932e3ea3~mv2.png" 
+        src="" 
         alt="Player Photo" 
       />
     </div>
 
     <!-- Player Name -->
-    <div class="player-name" id="player-name">Rayanne</div>
+    <div class="player-name" id="player-name">Player</div>
 
     <!-- Stats -->
     <div class="stats">
@@ -169,27 +181,52 @@
         <div class="stat-value" id="player-passes">0</div>
       </div>
     </div>
+
+    <!-- Debug Info -->
+    <div class="debug-info" id="debug-info">Waiting for data...</div>
   </div>
 
   <script>
-    // OPTIONAL: Dynamic updates with test data
-    window.addEventListener('load', () => {
-      const player = {
-        name: 'Rayanne',
-        team: 'Kelb United',
-        number: 4,
-        goals: 0,
-        passes: 0,
-        photo: 'https://static.wixstatic.com/media/9e7f4d_289498e9283448c8bd89aa2932e3ea3~mv2.png'
-      };
+    /**
+     * Listen for player data from Wix via postMessage
+     */
+    window.addEventListener("message", (event) => {
+      try {
+        if (!event.data || event.data.type !== "PLAYER_DATA") return;
 
-      // Update content dynamically
-      document.getElementById('player-name').innerText = player.name;
-      document.getElementById('team-name').innerText = player.team;
-      document.getElementById('jersey-number').innerText = player.number;
-      document.getElementById('player-goals').innerText = player.goals;
-      document.getElementById('player-passes').innerText = player.passes;
-      document.getElementById('player-image').src = player.photo;
+        const debug = document.getElementById('debug-info');
+        debug.innerText = 'Message received';
+
+        const player = event.data.payload;
+
+        // Extract player data safely
+        const name = player.nom || 'Joueur';
+        const team = player.equipe?.title || 'Team';
+        const numero = player.numero || '#';
+        const goals = player.but || 0;
+        const passes = player.passes || 0;
+        const photoUrl = player.photo && player.photo.trim() !== '' ? player.photo : null;
+
+        // Update UI with player data
+        document.getElementById('player-name').innerText = name;
+        document.getElementById('team-name').innerText = team;
+        document.getElementById('jersey-number').innerText = numero;
+        document.getElementById('player-goals').innerText = goals;
+        document.getElementById('player-passes').innerText = passes;
+
+        if (photoUrl) {
+          const img = document.getElementById('player-image');
+          img.crossOrigin = "anonymous"; // Helps avoid CORS tainting
+          img.src = photoUrl + "?dn=1"; // Adding dn=1 improves Wix CORS handling
+        } else {
+          document.getElementById('player-image').src = "";
+        }
+
+        debug.innerText = 'Player data updated successfully';
+      } catch (error) {
+        console.error('Error processing message from Wix:', error);
+        document.getElementById('debug-info').innerText = 'Error: ' + error.message;
+      }
     });
   </script>
 </body>
