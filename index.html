@@ -72,17 +72,17 @@
     /* Top image section */
     .player-photo {
       width: 100%;
-      height: 62%; /* make the image occupy more space */
+      height: 60%;
       overflow: hidden;
       position: relative;
     }
 
     .player-photo img {
       width: 100%;
-      height: 180%; /* taller to crop bottom and focus on top */
+      height: 180%;
       object-fit: cover;
-      object-position: center top; /* focus on upper body */
-      transform: scale(1.25); /* zoom in more for tighter framing */
+      object-position: center top;
+      transform: scale(1.25); /* zoom for upper body */
     }
 
     /* Player info area */
@@ -90,32 +90,31 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 4px 10px 0 10px; /* very minimal padding */
+      padding: 6px 10px 4px 10px; /* minimal padding to remove extra space */
       text-align: center;
-      flex: 0;
+      background: #2563eb; /* unified background for name & stats */
     }
 
     .player-name {
       font-size: 20px;
       font-weight: bold;
-      margin-top: 2px; /* minimal spacing */
+      margin-bottom: 6px; /* reduced gap between name and stats */
     }
 
     /* Stats section */
     .stats {
       display: flex;
       justify-content: space-around;
-      padding: 12px 10px;
-      background: rgba(0,0,0,0.35);
-      border-top: 1px solid rgba(255,255,255,0.1);
-      margin-top: auto;
+      width: 100%;
+      padding: 8px 10px;
+      background: rgba(0, 0, 0, 0.3);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .stat {
       text-align: center;
     }
 
-    /* Increased font size for better visibility */
     .stat-label {
       font-size: 14px;
       font-weight: 500;
@@ -171,16 +170,16 @@
 
             <div class="player-info">
               <div class="player-name">${player.nom ?? 'Joueur'}</div>
-            </div>
 
-            <div class="stats">
-              <div class="stat">
-                <div class="stat-label">Buts</div>
-                <div class="stat-value">${player.but ?? 0}</div>
-              </div>
-              <div class="stat">
-                <div class="stat-label">Passes</div>
-                <div class="stat-value">${player.passes ?? 0}</div>
+              <div class="stats">
+                <div class="stat">
+                  <div class="stat-label">Buts</div>
+                  <div class="stat-value">${player.but ?? 0}</div>
+                </div>
+                <div class="stat">
+                  <div class="stat-label">Passes</div>
+                  <div class="stat-value">${player.passes ?? 0}</div>
+                </div>
               </div>
             </div>
         </div>
