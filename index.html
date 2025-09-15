@@ -1,108 +1,119 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Player Card Widget</title>
-
   <style>
-    /* ==== GLOBAL STYLES ==== */
-    body {
-      background: linear-gradient(to bottom, #0a1a2f, #1a434f);
-      font-family: Arial, sans-serif;
-      color: white;
+    /* Reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    /* Container */
+    #app {
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
-      margin: 0;
+      height: 100%;
+      padding: 20px;
     }
 
-    /* ==== PLAYER CARD CONTAINER ==== */
+    /* Player Card */
     .player-card {
-      width: 300px;
-      height: 420px;
+      position: relative;
+      width: 250px;
+      height: 380px;
+      background: linear-gradient(145deg, #1a434f, #2563eb);
       border-radius: 20px;
-      background: linear-gradient(to bottom, #1e3a8a, #2563eb);
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 16px;
-      position: relative;
-      overflow: hidden;
+      padding: 20px 10px;
+      color: #fff;
     }
 
-    /* ==== HEADER: JERSEY NUMBER & TEAM NAME ==== */
-    .player-header {
-      position: absolute;
-      top: 12px;
-      left: 12px;
-      display: flex;
-      gap: 8px;
-      width: calc(100% - 24px);
-      justify-content: space-between;
-    }
-
+    /* Jersey number top left */
     .jersey-number {
-      background: rgba(0, 0, 0, 0.6);
-      padding: 4px 8px;
-      border-radius: 6px;
-      font-size: 18px;
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      font-size: 28px;
       font-weight: bold;
-    }
-
-    .team-name {
-      background: rgba(255, 255, 255, 0.3);
+      color: #fff;
+      background: rgba(0,0,0,0.3);
       padding: 4px 10px;
-      border-radius: 10px;
-      font-size: 14px;
+      border-radius: 8px;
     }
 
-    /* ==== IMAGE CONTAINER ==== */
-    .player-image-container {
-      width: 240px;
-      height: 280px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.1);
-      margin-top: 40px;
+    /* Team name top right */
+    .team-name {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      font-size: 16px;
+      background: rgba(255,255,255,0.2);
+      padding: 3px 8px;
+      border-radius: 8px;
+    }
+
+    /* Player photo */
+    .player-photo {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
       overflow: hidden;
-      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 30px;
+      border: 4px solid rgba(255,255,255,0.3);
     }
 
-    /* ==== IMAGE: FOCUS ON TOP ==== */
-    .player-image {
+    /* 
+      Key change: 
+      - Zoom into top half
+      - object-position: center top to focus on upper area
+      - transform: scale(1.8) to zoom in
+    */
+    .player-photo img {
       width: 100%;
-      height: 100%;
-      object-fit: cover;         /* Ensures the image fills container without distortion */
-      object-position: center top; /* Always focus on the top part */
-      transform: scale(1.8);     /* Zoom in for a close-up effect */
-      transition: transform 0.3s ease, object-position 0.3s ease;
-      border-radius: 12px;
+      height: 200%; /* Double the height to effectively crop */
+      object-fit: cover;
+      object-position: center top;
+      transform: scale(1.2); /* Adjust zoom factor as needed */
     }
 
-    /* Optional hover effect */
-    .player-image-container:hover .player-image {
-      transform: scale(1.9);
-    }
-
-    /* ==== PLAYER NAME ==== */
+    /* Player Name */
     .player-name {
-      margin-top: 8px;
-      font-size: 20px;
+      margin-top: 20px;
+      font-size: 22px;
       font-weight: bold;
       text-align: center;
     }
 
-    /* ==== STATS CONTAINER ==== */
+    /* Stats */
     .stats {
       display: flex;
       justify-content: space-around;
       width: 100%;
       margin-top: auto;
-      background: rgba(0, 0, 0, 0.2);
-      padding: 8px 0;
-      border-radius: 12px;
+      padding: 15px 10px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 10px;
     }
 
     .stat {
@@ -115,119 +126,68 @@
     }
 
     .stat-value {
-      font-size: 16px;
+      font-size: 18px;
       font-weight: bold;
     }
 
-    /* ==== RESPONSIVE DESIGN ==== */
-    @media (max-width: 768px) {
-      .player-card {
-        width: 250px;
-        height: 360px;
-      }
-
-      .player-image-container {
-        width: 200px;
-        height: 240px;
-      }
-
-      .player-image {
-        transform: scale(1.6); /* Slightly less zoom for mobile */
-      }
-    }
-
-    /* Debug info for testing */
-    .debug-info {
-      position: absolute;
-      bottom: 5px;
-      left: 5px;
-      font-size: 10px;
-      color: #ff6b6b;
-      background: rgba(0, 0, 0, 0.7);
-      padding: 2px 4px;
-      border-radius: 4px;
+    /* Fallback silhouette */
+    .placeholder {
+      width: 80px;
+      height: 80px;
+      opacity: 0.4;
     }
   </style>
 </head>
 <body>
-  <div class="player-card">
-    <!-- Top Header -->
-    <div class="player-header">
-      <div class="jersey-number" id="jersey-number">#</div>
-      <div class="team-name" id="team-name">Team</div>
-    </div>
-
-    <!-- Player Image -->
-    <div class="player-image-container">
-      <img 
-        id="player-image"
-        class="player-image" 
-        src="" 
-        alt="Player Photo" 
-      />
-    </div>
-
-    <!-- Player Name -->
-    <div class="player-name" id="player-name">Player</div>
-
-    <!-- Stats -->
-    <div class="stats">
-      <div class="stat">
-        <div class="stat-label">Buts</div>
-        <div class="stat-value" id="player-goals">0</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Passes</div>
-        <div class="stat-value" id="player-passes">0</div>
-      </div>
-    </div>
-
-    <!-- Debug Info -->
-    <div class="debug-info" id="debug-info">Waiting for data...</div>
+  <div id="app">
+    <p>En attente des données du joueur...</p>
   </div>
 
   <script>
-    /**
-     * Listen for player data from Wix via postMessage
-     */
-    window.addEventListener("message", (event) => {
-      try {
+    const app = document.getElementById('app');
+
+    // Fallback silhouette image URL
+    const FALLBACK_IMAGE = "https://cdn-icons-png.flaticon.com/512/64/64572.png";
+
+    // Listen for messages from Wix
+    window.addEventListener('message', function(event) {
         if (!event.data || event.data.type !== "PLAYER_DATA") return;
 
-        const debug = document.getElementById('debug-info');
-        debug.innerText = 'Message received';
-
         const player = event.data.payload;
+        console.log("Received Player Data:", player);
 
-        // Extract player data safely
-        const name = player.nom || 'Joueur';
-        const team = player.equipe?.title || 'Team';
-        const numero = player.numero || '#';
-        const goals = player.but || 0;
-        const passes = player.passes || 0;
-        const photoUrl = player.photo && player.photo.trim() !== '' ? player.photo : null;
-
-        // Update UI with player data
-        document.getElementById('player-name').innerText = name;
-        document.getElementById('team-name').innerText = team;
-        document.getElementById('jersey-number').innerText = numero;
-        document.getElementById('player-goals').innerText = goals;
-        document.getElementById('player-passes').innerText = passes;
-
-        if (photoUrl) {
-          const img = document.getElementById('player-image');
-          img.crossOrigin = "anonymous"; // Helps avoid CORS tainting
-          img.src = photoUrl + "?dn=1"; // Adding dn=1 improves Wix CORS handling
-        } else {
-          document.getElementById('player-image').src = "";
-        }
-
-        debug.innerText = 'Player data updated successfully';
-      } catch (error) {
-        console.error('Error processing message from Wix:', error);
-        document.getElementById('debug-info').innerText = 'Error: ' + error.message;
-      }
+        renderPlayerCard(player);
     });
+
+    function renderPlayerCard(player) {
+        console.log('Sanity Test');
+        console.log(player.photo);
+        const photoUrl = player.photo;
+
+        app.innerHTML = `
+        <div class="player-card">
+            <div class="jersey-number">${player.numero ?? ''}</div>
+            <div class="team-name">${player.equipe?.title ?? ''}</div>
+
+            <div class="player-photo">
+              <img src="${photoUrl}" alt="Player Photo" onerror="this.src='${FALLBACK_IMAGE}'" />
+            </div>
+
+            <div class="player-name">${player.nom ?? 'Joueur'}</div>
+
+            <div class="stats">
+              <div class="stat">
+                  <div class="stat-label">Buts</div>
+                  <div class="stat-value">${player.but ?? 0}</div>
+              </div>
+              <div class="stat">
+                  <div class="stat-label">Passes</div>
+                  <div class="stat-value">${player.passes ?? 0}</div>
+              </div>
+            </div>
+        </div>
+        `;
+    }
   </script>
 </body>
 </html>
