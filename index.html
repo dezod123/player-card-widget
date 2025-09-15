@@ -3,7 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Player Card Widget</title>
+  <title>Player Card Widget with MediaPipe Face Detection</title>
+
+  <!-- MediaPipe Face Detection -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js" crossorigin="anonymous"></script>
 
   <style>
     body {
@@ -72,20 +77,9 @@
     .player-image {
       width: 100%;
       height: 100%;
+      object-fit: cover;
       border-radius: 12px;
-    }
-
-    /* Smart cropping styles */
-    .player-image.smart-crop {
-      object-fit: cover;
-      object-position: 50% 25%; /* Center horizontally, 25% from top (face area) */
-      transform: scale(1.5); /* Zoom in for better face visibility */
-    }
-
-    /* Regular display without processing */
-    .player-image.normal {
-      object-fit: cover;
-      object-position: center;
+      transition: transform 0.3s ease;
     }
 
     .placeholder-icon {
@@ -148,35 +142,24 @@
       z-index: 10;
     }
 
-    .mode-toggle {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: rgba(255,255,255,0.2);
-      border: none;
-      color: white;
-      padding: 5px 10px;
-      border-radius: 5px;
-      font-size: 10px;
-      cursor: pointer;
-      z-index: 20;
+    /* Hidden elements for processing */
+    #processing-canvas, #temp-image {
+      display: none;
     }
   </style>
 </head>
 <body>
 
   <div class="player-card">
-    <button class="mode-toggle" onclick="toggleCropMode()">Smart Crop: ON</button>
-    
     <div class="player-header">
       <div class="jersey-number" id="jersey-number">#</div>
       <div class="team-name" id="team-name">Team</div>
     </div>
 
     <div class="player-image-container">
-      <img id="player-image" class="player-image smart-crop" style="display: none;" />
+      <img id="player-image" class="player-image" style="display: none;" />
       <div class="placeholder-icon" id="placeholder">👤</div>
-      <div class="loading" id="loading" style="display: none;">Loading...</div>
+      <div class="loading" id="loading" style="display: none;">Detecting face...</div>
     </div>
 
     <div class="player-name" id="player-name">Player</div>
@@ -195,42 +178,138 @@
     <div class="debug-info" id="debug-info">Waiting for data...</div>
   </div>
 
+  <!-- Hidden elements for processing -->
+  <canvas id="processing-canvas"></canvas>
+  <img id="temp-image" />
+
   <script>
-    let currentImageUrl = null;
-    let smartCropEnabled = true;
+    let faceDetection = null;
+    let isModelLoaded = false;
 
     function updateDebug(message) {
       document.getElementById('debug-info').innerText = message;
       console.log('DEBUG:', message);
     }
 
-    function toggleCropMode() {
-      smartCropEnabled = !smartCropEnabled;
-      const button = document.querySelector('.mode-toggle');
-      const img = document.getElementById('player-image');
+    /**
+     * Initialize MediaPipe Face Detection
+     */
+    async function initializeFaceDetection() {
+      if (isModelLoaded) return true;
       
-      button.textContent = `Smart Crop: ${smartCropEnabled ? 'ON' : 'OFF'}`;
-      
-      if (img.style.display !== 'none') {
-        img.className = smartCropEnabled ? 'player-image smart-crop' : 'player-image normal';
-        updateDebug(`Switched to ${smartCropEnabled ? 'smart crop' : 'normal'} mode`);
-      }
-      
-      // Reload current image if available
-      if (currentImageUrl) {
-        loadPlayerImage(currentImageUrl);
+      try {
+        updateDebug('Loading MediaPipe Face Detection...');
+        
+        faceDetection = new FaceDetection({
+          locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`;
+          }
+        });
+
+        faceDetection.setOptions({
+          model: 'short', // 'short' for close-range detection (perfect for portraits)
+          minDetectionConfidence: 0.5,
+        });
+
+        await new Promise((resolve) => {
+          faceDetection.onResults((results) => {
+            // This will be called for each detection
+          });
+          
+          faceDetection.initialize().then(() => {
+            isModelLoaded = true;
+            updateDebug('MediaPipe Face Detection loaded!');
+            resolve();
+          });
+        });
+
+        return true;
+      } catch (error) {
+        updateDebug('Failed to load MediaPipe: ' + error.message);
+        console.error('MediaPipe initialization error:', error);
+        return false;
       }
     }
 
     /**
-     * Simple image loading with CSS-based smart cropping
+     * Detect face in image and get bounding box
      */
-    function loadPlayerImage(imageUrl) {
+    async function detectFaceInImage(imageElement) {
+      if (!isModelLoaded) {
+        const loaded = await initializeFaceDetection();
+        if (!loaded) return null;
+      }
+
+      return new Promise((resolve) => {
+        faceDetection.onResults((results) => {
+          if (results.detections && results.detections.length > 0) {
+            const detection = results.detections[0];
+            const bbox = detection.boundingBox;
+            
+            // Convert normalized coordinates to pixel coordinates
+            const face = {
+              x: bbox.xCenter * imageElement.naturalWidth - (bbox.width * imageElement.naturalWidth) / 2,
+              y: bbox.yCenter * imageElement.naturalHeight - (bbox.height * imageElement.naturalHeight) / 2,
+              width: bbox.width * imageElement.naturalWidth,
+              height: bbox.height * imageElement.naturalHeight
+            };
+            
+            updateDebug(`Face detected: ${Math.round(face.x)}, ${Math.round(face.y)}`);
+            resolve(face);
+          } else {
+            updateDebug('No face detected by MediaPipe');
+            resolve(null);
+          }
+        });
+
+        // Send image to MediaPipe
+        faceDetection.send({ image: imageElement });
+      });
+    }
+
+    /**
+     * Apply zoom and positioning based on face location
+     */
+    function applyFaceZoom(img, faceArea) {
+      if (!faceArea) {
+        // Fallback to smart crop if no face detected
+        img.style.objectPosition = '50% 25%';
+        img.style.transform = 'scale(1.3)';
+        updateDebug('Using fallback smart crop');
+        return;
+      }
+
+      const container = img.parentElement;
+      const containerWidth = container.offsetWidth;
+      const containerHeight = container.offsetHeight;
+
+      // Calculate the center of the face
+      const faceCenterX = faceArea.x + faceArea.width / 2;
+      const faceCenterY = faceArea.y + faceArea.height / 2;
+
+      // Convert to percentage for object-position
+      const posX = (faceCenterX / img.naturalWidth) * 100;
+      const posY = (faceCenterY / img.naturalHeight) * 100;
+
+      // Calculate zoom based on face size (zoom in more for smaller faces)
+      const faceAreaRatio = (faceArea.width * faceArea.height) / (img.naturalWidth * img.naturalHeight);
+      const zoomFactor = Math.max(1.5, Math.min(3.0, 0.3 / faceAreaRatio));
+
+      // Apply the transformation
+      img.style.objectPosition = `${posX}% ${posY}%`;
+      img.style.transform = `scale(${zoomFactor})`;
+
+      updateDebug(`Face zoom applied: ${zoomFactor.toFixed(2)}x at ${Math.round(posX)}%, ${Math.round(posY)}%`);
+    }
+
+    /**
+     * Process player image with face detection
+     */
+    async function processPlayerImage(imageUrl) {
       const img = document.getElementById('player-image');
       const placeholder = document.getElementById('placeholder');
       const loading = document.getElementById('loading');
-
-      currentImageUrl = imageUrl;
+      const tempImg = document.getElementById('temp-image');
 
       if (!imageUrl || imageUrl.trim() === '') {
         updateDebug('No image URL provided');
@@ -241,36 +320,45 @@
       loading.style.display = 'block';
       placeholder.style.display = 'none';
 
-      // Set the appropriate CSS class
-      img.className = smartCropEnabled ? 'player-image smart-crop' : 'player-image normal';
-
-      img.onload = function() {
-        updateDebug(`Image loaded successfully (${smartCropEnabled ? 'smart crop' : 'normal'} mode)`);
-        img.style.display = 'block';
-        loading.style.display = 'none';
-        placeholder.style.display = 'none';
+      // Load image for processing
+      tempImg.onload = async function() {
+        updateDebug('Image loaded, detecting face...');
+        
+        try {
+          // Detect face
+          const faceArea = await detectFaceInImage(tempImg);
+          
+          // Set the display image
+          img.src = imageUrl;
+          img.style.display = 'block';
+          
+          // Apply face-based zoom
+          img.onload = () => {
+            applyFaceZoom(img, faceArea);
+            loading.style.display = 'none';
+            updateDebug('Face processing complete');
+          };
+          
+        } catch (error) {
+          updateDebug('Face detection error: ' + error.message);
+          // Fallback to simple display
+          img.src = imageUrl;
+          img.style.display = 'block';
+          img.style.objectPosition = '50% 25%';
+          img.style.transform = 'scale(1.3)';
+          loading.style.display = 'none';
+        }
       };
 
-      img.onerror = function(error) {
+      tempImg.onerror = function(error) {
         updateDebug('Image failed to load: ' + imageUrl);
-        console.error('Image load error:', error);
         img.style.display = 'none';
         loading.style.display = 'none';
         placeholder.style.display = 'block';
         placeholder.innerHTML = '❌';
-        
-        // Try fallback image
-        if (!imageUrl.includes('flaticon')) {
-          updateDebug('Trying fallback image...');
-          setTimeout(() => {
-            const fallbackUrl = "https://cdn-icons-png.flaticon.com/512/64/64572.png";
-            img.src = fallbackUrl;
-            currentImageUrl = fallbackUrl;
-          }, 1000);
-        }
       };
 
-      img.src = imageUrl;
+      tempImg.src = imageUrl;
     }
 
     /**
@@ -286,9 +374,9 @@
       document.getElementById('player-goals').innerText = playerData.goals || 0;
       document.getElementById('player-passes').innerText = playerData.passes || 0;
 
-      // Load image
+      // Process image with face detection
       if (imageUrl) {
-        loadPlayerImage(imageUrl);
+        processPlayerImage(imageUrl);
       }
     }
 
@@ -297,13 +385,9 @@
      */
     window.addEventListener("message", (event) => {
       try {
-        updateDebug('Message received from parent');
-        
-        if (!event.data || event.data.type !== "PLAYER_DATA") {
-          updateDebug('Invalid message type: ' + (event.data ? event.data.type : 'no data'));
-          return;
-        }
+        if (!event.data || event.data.type !== "PLAYER_DATA") return;
 
+        updateDebug('Message received from parent');
         console.log("Received player data from Wix:", event.data.payload);
 
         const player = event.data.payload;
@@ -329,10 +413,15 @@
       }
     });
 
-    // Test with sample data if no message received after 3 seconds
+    // Pre-load the model
+    window.addEventListener('load', async () => {
+      await initializeFaceDetection();
+    });
+
+    // Test with sample data if no message received after 5 seconds
     setTimeout(() => {
-      if (document.getElementById('debug-info').innerText === 'Waiting for data...') {
-        updateDebug('No data received, testing with local data');
+      if (document.getElementById('debug-info').innerText.includes('Waiting for data')) {
+        updateDebug('No data received, testing with sample');
         const testData = {
           name: 'Test Player',
           team: 'Test Team',
@@ -341,31 +430,21 @@
           passes: 12
         };
         
-        // Use a simple data URL that will definitely work
+        // Test with a portrait that should work
         const testImageUrl = "data:image/svg+xml;base64," + btoa(`
-          <svg width="240" height="280" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" style="stop-color:#4299e1;stop-opacity:1" />
-                <stop offset="100%" style="stop-color:#2563eb;stop-opacity:1" />
-              </linearGradient>
-            </defs>
-            <rect width="240" height="280" fill="url(#bg)" rx="12"/>
-            <circle cx="120" cy="80" r="35" fill="white" opacity="0.9"/>
-            <circle cx="110" cy="75" r="3" fill="#2563eb"/>
-            <circle cx="130" cy="75" r="3" fill="#2563eb"/>
-            <path d="M 110 85 Q 120 95 130 85" stroke="#2563eb" stroke-width="2" fill="none"/>
-            <rect x="105" y="120" width="30" height="50" fill="white" opacity="0.9" rx="15"/>
-            <rect x="95" y="140" width="15" height="40" fill="white" opacity="0.9" rx="7"/>
-            <rect x="130" y="140" width="15" height="40" fill="white" opacity="0.9" rx="7"/>
-            <text x="120" y="220" text-anchor="middle" fill="white" font-size="16" font-weight="bold">TEST</text>
-            <text x="120" y="240" text-anchor="middle" fill="white" font-size="12">PLAYER</text>
+          <svg width="400" height="600" xmlns="http://www.w3.org/2000/svg">
+            <rect width="400" height="600" fill="#f0f0f0"/>
+            <circle cx="200" cy="150" r="60" fill="#ffdbac" stroke="#d4a574" stroke-width="2"/>
+            <circle cx="180" cy="135" r="5" fill="black"/>
+            <circle cx="220" cy="135" r="5" fill="black"/>
+            <ellipse cx="200" cy="165" rx="8" ry="4" fill="#d4a574"/>
+            <text x="200" y="450" text-anchor="middle" font-size="24" fill="black">TEST PLAYER</text>
           </svg>
         `);
         
         processPlayerData(testData, testImageUrl);
       }
-    }, 3000);
+    }, 5000);
   </script>
 </body>
 </html>
