@@ -35,85 +35,86 @@
       width: 250px;
       height: 380px;
       background: linear-gradient(145deg, #1a434f, #2563eb);
-      border-radius: 20px;
+      border-radius: 16px;
       overflow: hidden;
       box-shadow: 0 8px 20px rgba(0,0,0,0.4);
       display: flex;
       flex-direction: column;
-      align-items: center;
-      padding: 20px 10px;
       color: #fff;
     }
 
     /* Jersey number top left */
     .jersey-number {
       position: absolute;
-      top: 15px;
-      left: 15px;
-      font-size: 28px;
+      top: 12px;
+      left: 12px;
+      font-size: 20px;
       font-weight: bold;
       color: #fff;
-      background: rgba(0,0,0,0.3);
+      background: rgba(0,0,0,0.4);
       padding: 4px 10px;
-      border-radius: 8px;
+      border-radius: 6px;
+      z-index: 2;
     }
 
     /* Team name top right */
     .team-name {
       position: absolute;
-      top: 15px;
-      right: 15px;
-      font-size: 16px;
+      top: 12px;
+      right: 12px;
+      font-size: 14px;
       background: rgba(255,255,255,0.2);
       padding: 3px 8px;
-      border-radius: 8px;
+      border-radius: 6px;
+      z-index: 2;
     }
 
-    /* Player photo */
+    /* Top image section */
     .player-photo {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.1);
+      width: 100%;
+      height: 50%;
       overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-top: 30px;
-      border: 4px solid rgba(255,255,255,0.3);
+      position: relative;
     }
 
     /* 
-      Key change: 
-      - Zoom into top half
-      - object-position: center top to focus on upper area
-      - transform: scale(1.8) to zoom in
+      Modern effect:
+      - object-position: center top to focus on upper body
+      - height larger than container to crop the bottom
+      - transform for zoom
     */
     .player-photo img {
       width: 100%;
-      height: 200%; /* Double the height to effectively crop */
+      height: 150%;
       object-fit: cover;
       object-position: center top;
-      transform: scale(1.2); /* Adjust zoom factor as needed */
+      transform: scale(1.05);
     }
 
-    /* Player Name */
-    .player-name {
-      margin-top: 20px;
-      font-size: 22px;
-      font-weight: bold;
+    /* Player info area */
+    .player-info {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 15px 10px;
       text-align: center;
+      flex: 1;
     }
 
-    /* Stats */
+    .player-name {
+      font-size: 20px;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+
+    /* Stats section */
     .stats {
       display: flex;
       justify-content: space-around;
-      width: 100%;
-      margin-top: auto;
-      padding: 15px 10px;
+      padding: 12px 10px;
       background: rgba(0,0,0,0.3);
-      border-radius: 10px;
+      border-top: 1px solid rgba(255,255,255,0.1);
     }
 
     .stat {
@@ -132,8 +133,8 @@
 
     /* Fallback silhouette */
     .placeholder {
-      width: 80px;
-      height: 80px;
+      width: 100%;
+      height: 100%;
       opacity: 0.4;
     }
   </style>
@@ -160,8 +161,6 @@
     });
 
     function renderPlayerCard(player) {
-        console.log('Sanity Test');
-        console.log(player.photo);
         const photoUrl = player.photo;
 
         app.innerHTML = `
@@ -173,16 +172,18 @@
               <img src="${photoUrl}" alt="Player Photo" onerror="this.src='${FALLBACK_IMAGE}'" />
             </div>
 
-            <div class="player-name">${player.nom ?? 'Joueur'}</div>
+            <div class="player-info">
+              <div class="player-name">${player.nom ?? 'Joueur'}</div>
+            </div>
 
             <div class="stats">
               <div class="stat">
-                  <div class="stat-label">Buts</div>
-                  <div class="stat-value">${player.but ?? 0}</div>
+                <div class="stat-label">Buts</div>
+                <div class="stat-value">${player.but ?? 0}</div>
               </div>
               <div class="stat">
-                  <div class="stat-label">Passes</div>
-                  <div class="stat-value">${player.passes ?? 0}</div>
+                <div class="stat-label">Passes</div>
+                <div class="stat-value">${player.passes ?? 0}</div>
               </div>
             </div>
         </div>
