@@ -1,18 +1,12 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Player Card Widget with BlazeFace</title>
-
-  <!-- TensorFlow.js -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
-
-  <!-- BlazeFace -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface"></script>
+  <title>Player Card Widget</title>
 
   <style>
+    /* ==== GLOBAL STYLES ==== */
     body {
       background: linear-gradient(to bottom, #0a1a2f, #1a434f);
       font-family: Arial, sans-serif;
@@ -24,13 +18,13 @@
       margin: 0;
     }
 
-    /* Player Card Styling */
+    /* ==== PLAYER CARD CONTAINER ==== */
     .player-card {
       width: 300px;
       height: 420px;
       border-radius: 20px;
       background: linear-gradient(to bottom, #1e3a8a, #2563eb);
-      box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -39,6 +33,7 @@
       overflow: hidden;
     }
 
+    /* ==== HEADER: JERSEY NUMBER & TEAM NAME ==== */
     .player-header {
       position: absolute;
       top: 12px;
@@ -50,7 +45,7 @@
     }
 
     .jersey-number {
-      background: rgba(0,0,0,0.6);
+      background: rgba(0, 0, 0, 0.6);
       padding: 4px 8px;
       border-radius: 6px;
       font-size: 18px;
@@ -58,38 +53,40 @@
     }
 
     .team-name {
-      background: rgba(255,255,255,0.3);
+      background: rgba(255, 255, 255, 0.3);
       padding: 4px 10px;
       border-radius: 10px;
       font-size: 14px;
     }
 
+    /* ==== IMAGE CONTAINER ==== */
     .player-image-container {
       width: 240px;
       height: 280px;
       border-radius: 12px;
-      background: rgba(255,255,255,0.1);
+      background: rgba(255, 255, 255, 0.1);
       margin-top: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       overflow: hidden;
       position: relative;
     }
 
+    /* ==== IMAGE: FOCUS ON TOP ==== */
     .player-image {
       width: 100%;
       height: 100%;
-      object-fit: cover;
-      border-radius: 12px;
+      object-fit: cover;         /* Ensures the image fills container without distortion */
+      object-position: center top; /* Always focus on the top part */
+      transform: scale(1.8);     /* Zoom in for a close-up effect */
       transition: transform 0.3s ease, object-position 0.3s ease;
+      border-radius: 12px;
     }
 
-    .placeholder-icon {
-      font-size: 48px;
-      color: rgba(255,255,255,0.5);
+    /* Optional hover effect */
+    .player-image-container:hover .player-image {
+      transform: scale(1.9);
     }
 
+    /* ==== PLAYER NAME ==== */
     .player-name {
       margin-top: 8px;
       font-size: 20px;
@@ -97,13 +94,13 @@
       text-align: center;
     }
 
-    /* Stats */
+    /* ==== STATS CONTAINER ==== */
     .stats {
       display: flex;
       justify-content: space-around;
       width: 100%;
       margin-top: auto;
-      background: rgba(0,0,0,0.2);
+      background: rgba(0, 0, 0, 0.2);
       padding: 8px 0;
       border-radius: 12px;
     }
@@ -122,48 +119,46 @@
       font-weight: bold;
     }
 
-    /* Loader */
-    .loading {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: white;
-      font-size: 14px;
-      font-weight: bold;
-    }
+    /* ==== RESPONSIVE DESIGN ==== */
+    @media (max-width: 768px) {
+      .player-card {
+        width: 250px;
+        height: 360px;
+      }
 
-    /* Debug Info */
-    .debug-info {
-      position: absolute;
-      bottom: 10px;
-      left: 10px;
-      font-size: 10px;
-      color: #ff6b6b;
-      background: rgba(0,0,0,0.8);
-      padding: 4px;
-      border-radius: 4px;
-      max-width: 280px;
-      word-break: break-word;
-      z-index: 10;
+      .player-image-container {
+        width: 200px;
+        height: 240px;
+      }
+
+      .player-image {
+        transform: scale(1.6); /* Slightly less zoom for mobile */
+      }
     }
   </style>
 </head>
 <body>
   <div class="player-card">
+    <!-- Top Header -->
     <div class="player-header">
-      <div class="jersey-number" id="jersey-number">#</div>
-      <div class="team-name" id="team-name">Team</div>
+      <div class="jersey-number" id="jersey-number">4</div>
+      <div class="team-name" id="team-name">Kelb United</div>
     </div>
 
+    <!-- Player Image -->
     <div class="player-image-container">
-      <img id="player-image" class="player-image" style="display: none;" />
-      <div class="placeholder-icon" id="placeholder">👤</div>
-      <div class="loading" id="loading" style="display: none;">Detecting face...</div>
+      <img 
+        id="player-image"
+        class="player-image" 
+        src="https://static.wixstatic.com/media/9e7f4d_289498e9283448c8bd89aa2932e3ea3~mv2.png" 
+        alt="Player Photo" 
+      />
     </div>
 
-    <div class="player-name" id="player-name">Player</div>
+    <!-- Player Name -->
+    <div class="player-name" id="player-name">Rayanne</div>
 
+    <!-- Stats -->
     <div class="stats">
       <div class="stat">
         <div class="stat-label">Buts</div>
@@ -174,186 +169,28 @@
         <div class="stat-value" id="player-passes">0</div>
       </div>
     </div>
-
-    <div class="debug-info" id="debug-info">Waiting for data...</div>
   </div>
 
   <script>
-    let blazeModel = null;
-
-    function updateDebug(msg) {
-      document.getElementById('debug-info').innerText = msg;
-      console.log('DEBUG:', msg);
-    }
-
-    // Load BlazeFace model
-    async function loadBlazeFace() {
-      if (!blazeModel) {
-        updateDebug("Loading BlazeFace model...");
-        blazeModel = await blazeface.load();
-        updateDebug("BlazeFace model loaded!");
-      }
-      return blazeModel;
-    }
-
-    /**
-     * Detect face in image
-     */
-    async function detectFace(imageElement) {
-      const model = await loadBlazeFace();
-      const predictions = await model.estimateFaces(imageElement, false);
-
-      if (predictions.length > 0) {
-        const face = predictions[0].topLeft.concat(predictions[0].bottomRight);
-        return {
-          x: face[0],
-          y: face[1],
-          width: face[2] - face[0],
-          height: face[3] - face[1]
-        };
-      }
-
-      return null;
-    }
-
-    /**
-     * Apply zoom and center the face dynamically
-     */
-    function applyFaceZoom(img, faceBox) {
-      if (!faceBox) {
-        // Fallback if no face detected
-        img.style.objectPosition = "50% 25%";
-        img.style.transform = "scale(1.3)";
-        updateDebug("No face detected, fallback applied");
-        return;
-      }
-    
-      // Face center
-      let faceCenterX = faceBox.x + faceBox.width / 2;
-      let faceCenterY = faceBox.y + faceBox.height / 2;
-    
-      // Add upward bias to favor head area
-      const verticalBias = 0.25; // shift up by 25% of face height
-      faceCenterY = faceCenterY - (faceBox.height * verticalBias);
-    
-      // Clamp values to avoid cropping outside the image
-      faceCenterY = Math.max(0, Math.min(img.naturalHeight, faceCenterY));
-    
-      // Convert to percentage for object-position
-      const posX = (faceCenterX / img.naturalWidth) * 100;
-      const posY = (faceCenterY / img.naturalHeight) * 100;
-    
-      // Calculate zoom based on detected face area
-      const faceAreaRatio = (faceBox.width * faceBox.height) / (img.naturalWidth * img.naturalHeight);
-    
-      // Dynamic zoom control
-      const zoomFactor = Math.max(1.8, Math.min(3.5, 0.3 / faceAreaRatio));
-    
-      img.style.objectPosition = `${posX}% ${posY}%`;
-      img.style.transform = `scale(${zoomFactor})`;
-    
-      updateDebug(`Face detected: Zoom=${zoomFactor.toFixed(2)}, Pos=${Math.round(posX)}%, ${Math.round(posY)}%`);
-    }
-
-    /**
-     * Process image with BlazeFace
-     */
-    async function processPlayerImage(imageUrl) {
-      const img = document.getElementById('player-image');
-      const placeholder = document.getElementById('placeholder');
-      const loading = document.getElementById('loading');
-    
-      if (!imageUrl) {
-        updateDebug("No image URL provided");
-        return;
-      }
-    
-      // Add CORS handling
-      img.crossOrigin = "anonymous"; 
-    
-      placeholder.style.display = 'none';
-      loading.style.display = 'block';
-      img.style.display = 'none';
-    
-      img.onload = async () => {
-        updateDebug("Image loaded, detecting face...");
-        try {
-          const faceBox = await detectFace(img);
-          applyFaceZoom(img, faceBox);
-        } catch (error) {
-          console.error("Face detection error:", error);
-          updateDebug("Face detection failed, fallback mode");
-          img.style.objectPosition = "50% 25%";
-          img.style.transform = "scale(1.3)";
-        } finally {
-          img.style.display = 'block';
-          loading.style.display = 'none';
-        }
-      };
-    
-      img.onerror = () => {
-        updateDebug("Failed to load image.");
-        placeholder.style.display = 'block';
-        loading.style.display = 'none';
-      };
-    
-      // Add ?dn=1 to improve CORS compatibility
-      img.src = `${imageUrl}?dn=1`;
-    }
-
-
-    /**
-     * Display player data and photo
-     */
-    function displayPlayerData(player, photoUrl) {
-      document.getElementById('jersey-number').innerText = player.numero || '#';
-      document.getElementById('team-name').innerText = player.team || 'Team';
-      document.getElementById('player-name').innerText = player.name || 'Joueur';
-      document.getElementById('player-goals').innerText = player.goals || 0;
-      document.getElementById('player-passes').innerText = player.passes || 0;
-
-      processPlayerImage(photoUrl);
-    }
-
-    /**
-     * Listen for Wix postMessage
-     */
-    window.addEventListener("message", (event) => {
-      if (!event.data || event.data.type !== "PLAYER_DATA") return;
-
-      updateDebug("Player data received from Wix");
-
-      const player = event.data.payload;
-      const photoUrl = player.photo && player.photo.trim() !== '' 
-        ? player.photo 
-        : null;
-
-      const playerData = {
-        name: player.nom || 'Joueur',
-        team: player.equipe?.title || 'Team',
-        numero: player.numero || '#',
-        goals: player.but || 0,
-        passes: player.passes || 0
+    // OPTIONAL: Dynamic updates with test data
+    window.addEventListener('load', () => {
+      const player = {
+        name: 'Rayanne',
+        team: 'Kelb United',
+        number: 4,
+        goals: 0,
+        passes: 0,
+        photo: 'https://static.wixstatic.com/media/9e7f4d_289498e9283448c8bd89aa2932e3ea3~mv2.png'
       };
 
-      displayPlayerData(playerData, photoUrl);
+      // Update content dynamically
+      document.getElementById('player-name').innerText = player.name;
+      document.getElementById('team-name').innerText = player.team;
+      document.getElementById('jersey-number').innerText = player.number;
+      document.getElementById('player-goals').innerText = player.goals;
+      document.getElementById('player-passes').innerText = player.passes;
+      document.getElementById('player-image').src = player.photo;
     });
-
-    // Test mode: fallback data if nothing received
-    setTimeout(() => {
-      if (document.getElementById('debug-info').innerText.includes('Waiting')) {
-        updateDebug("No data received. Running test mode...");
-        const testData = {
-          name: 'Test Player',
-          team: 'Test Team',
-          numero: '10',
-          goals: 5,
-          passes: 3
-        };
-        const testImage = "https://static.wixstatic.com/media/9e7f4d_289498e9283448c8bd89aa2932e3ea3~mv2.png";
-        displayPlayerData(testData, testImage);
-      }
-    }, 5000);
   </script>
 </body>
 </html>
