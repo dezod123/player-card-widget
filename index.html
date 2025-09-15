@@ -72,17 +72,17 @@
     /* Top image section */
     .player-photo {
       width: 100%;
-      height: 55%; /* Bigger so the torso/head are dominant */
+      height: 62%; /* make the image occupy more space */
       overflow: hidden;
       position: relative;
     }
 
     .player-photo img {
       width: 100%;
-      height: 150%;
+      height: 180%; /* taller to crop bottom and focus on top */
       object-fit: cover;
-      object-position: center top; /* Focus on upper body */
-      transform: scale(1.05);
+      object-position: center top; /* focus on upper body */
+      transform: scale(1.25); /* zoom in more for tighter framing */
     }
 
     /* Player info area */
@@ -90,7 +90,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 8px 10px 0 10px; /* Less padding for a tighter look */
+      padding: 4px 10px 0 10px; /* very minimal padding */
       text-align: center;
       flex: 0;
     }
@@ -98,15 +98,15 @@
     .player-name {
       font-size: 20px;
       font-weight: bold;
-      margin-top: 4px; /* Tighten space between image and name */
+      margin-top: 2px; /* minimal spacing */
     }
 
     /* Stats section */
     .stats {
       display: flex;
       justify-content: space-around;
-      padding: 10px;
-      background: rgba(0,0,0,0.3);
+      padding: 12px 10px;
+      background: rgba(0,0,0,0.35);
       border-top: 1px solid rgba(255,255,255,0.1);
       margin-top: auto;
     }
@@ -115,14 +115,17 @@
       text-align: center;
     }
 
+    /* Increased font size for better visibility */
     .stat-label {
-      font-size: 12px;
-      color: #d1d5db;
+      font-size: 14px;
+      font-weight: 500;
+      color: #e2e8f0;
     }
 
     .stat-value {
-      font-size: 18px;
+      font-size: 22px;
       font-weight: bold;
+      margin-top: 2px;
     }
 
     /* Fallback silhouette */
