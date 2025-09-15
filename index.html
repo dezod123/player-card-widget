@@ -250,32 +250,45 @@
       const img = document.getElementById('player-image');
       const placeholder = document.getElementById('placeholder');
       const loading = document.getElementById('loading');
-
+    
       if (!imageUrl) {
         updateDebug("No image URL provided");
         return;
       }
-
+    
+      // Add CORS handling
+      img.crossOrigin = "anonymous"; 
+    
       placeholder.style.display = 'none';
       loading.style.display = 'block';
       img.style.display = 'none';
-
+    
       img.onload = async () => {
         updateDebug("Image loaded, detecting face...");
-        const faceBox = await detectFace(img);
-        applyFaceZoom(img, faceBox);
-        img.style.display = 'block';
-        loading.style.display = 'none';
+        try {
+          const faceBox = await detectFace(img);
+          applyFaceZoom(img, faceBox);
+        } catch (error) {
+          console.error("Face detection error:", error);
+          updateDebug("Face detection failed, fallback mode");
+          img.style.objectPosition = "50% 25%";
+          img.style.transform = "scale(1.3)";
+        } finally {
+          img.style.display = 'block';
+          loading.style.display = 'none';
+        }
       };
-
+    
       img.onerror = () => {
         updateDebug("Failed to load image.");
         placeholder.style.display = 'block';
         loading.style.display = 'none';
       };
-
-      img.src = imageUrl;
+    
+      // Add ?dn=1 to improve CORS compatibility
+      img.src = `${imageUrl}?dn=1`;
     }
+
 
     /**
      * Display player data and photo
