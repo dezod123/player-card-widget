@@ -320,15 +320,15 @@
       loading.style.display = 'block';
       placeholder.style.display = 'none';
 
-      // Load image for processing
+      // Load image for processing (without crossOrigin to avoid CORS preflight)
       tempImg.onload = async function() {
         updateDebug('Image loaded, detecting face...');
         
         try {
-          // Detect face
+          // Detect face using safe canvas method
           const faceArea = await detectFaceInImage(tempImg);
           
-          // Set the display image
+          // Set the display image (also without crossOrigin)
           img.src = imageUrl;
           img.style.display = 'block';
           
