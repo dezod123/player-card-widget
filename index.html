@@ -46,48 +46,42 @@
     /* Jersey number top left */
     .jersey-number {
       position: absolute;
-      top: 12px;
-      left: 12px;
-      font-size: 20px;
+      top: 10px;
+      left: 10px;
+      font-size: 18px;
       font-weight: bold;
       color: #fff;
       background: rgba(0,0,0,0.4);
-      padding: 4px 10px;
-      border-radius: 6px;
+      padding: 3px 8px;
+      border-radius: 5px;
       z-index: 2;
     }
 
     /* Team name top right */
     .team-name {
       position: absolute;
-      top: 12px;
-      right: 12px;
+      top: 10px;
+      right: 10px;
       font-size: 14px;
       background: rgba(255,255,255,0.2);
       padding: 3px 8px;
-      border-radius: 6px;
+      border-radius: 5px;
       z-index: 2;
     }
 
     /* Top image section */
     .player-photo {
       width: 100%;
-      height: 50%;
+      height: 55%; /* Bigger so the torso/head are dominant */
       overflow: hidden;
       position: relative;
     }
 
-    /* 
-      Modern effect:
-      - object-position: center top to focus on upper body
-      - height larger than container to crop the bottom
-      - transform for zoom
-    */
     .player-photo img {
       width: 100%;
       height: 150%;
       object-fit: cover;
-      object-position: center top;
+      object-position: center top; /* Focus on upper body */
       transform: scale(1.05);
     }
 
@@ -96,25 +90,25 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 15px 10px;
+      padding: 8px 10px 0 10px; /* Less padding for a tighter look */
       text-align: center;
-      flex: 1;
+      flex: 0;
     }
 
     .player-name {
       font-size: 20px;
       font-weight: bold;
-      margin-top: 5px;
+      margin-top: 4px; /* Tighten space between image and name */
     }
 
     /* Stats section */
     .stats {
       display: flex;
       justify-content: space-around;
-      padding: 12px 10px;
+      padding: 10px;
       background: rgba(0,0,0,0.3);
       border-top: 1px solid rgba(255,255,255,0.1);
+      margin-top: auto;
     }
 
     .stat {
