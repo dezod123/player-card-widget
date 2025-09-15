@@ -227,19 +227,31 @@
         updateDebug("No face detected, fallback applied");
         return;
       }
-
-      const faceCenterX = faceBox.x + faceBox.width / 2;
-      const faceCenterY = faceBox.y + faceBox.height / 2;
-
+    
+      // Face center
+      let faceCenterX = faceBox.x + faceBox.width / 2;
+      let faceCenterY = faceBox.y + faceBox.height / 2;
+    
+      // Add upward bias to favor head area
+      const verticalBias = 0.25; // shift up by 25% of face height
+      faceCenterY = faceCenterY - (faceBox.height * verticalBias);
+    
+      // Clamp values to avoid cropping outside the image
+      faceCenterY = Math.max(0, Math.min(img.naturalHeight, faceCenterY));
+    
+      // Convert to percentage for object-position
       const posX = (faceCenterX / img.naturalWidth) * 100;
       const posY = (faceCenterY / img.naturalHeight) * 100;
-
+    
+      // Calculate zoom based on detected face area
       const faceAreaRatio = (faceBox.width * faceBox.height) / (img.naturalWidth * img.naturalHeight);
-      const zoomFactor = Math.max(1.5, Math.min(3.0, 0.3 / faceAreaRatio));
-
+    
+      // Dynamic zoom control
+      const zoomFactor = Math.max(1.8, Math.min(3.5, 0.3 / faceAreaRatio));
+    
       img.style.objectPosition = `${posX}% ${posY}%`;
       img.style.transform = `scale(${zoomFactor})`;
-
+    
       updateDebug(`Face detected: Zoom=${zoomFactor.toFixed(2)}, Pos=${Math.round(posX)}%, ${Math.round(posY)}%`);
     }
 
